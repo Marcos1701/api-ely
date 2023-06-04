@@ -18,7 +18,7 @@ const validastring = (id: string) => {
          title varchar NOT NULL,
          text varchar NOT NULL,
          likes INT,
-         data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+         data_criacao DATE DEFAULT CURRENT_DATE
         )
     `);
         await client.query(`
@@ -26,7 +26,7 @@ const validastring = (id: string) => {
         id varchar PRIMARY KEY,
         text varchar NOT NULL,
         postagem_id varchar NOT NULL,
-        data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_criacao DATE DEFAULT CURRENT_DATE,
         FOREIGN KEY (postagem_id) REFERENCES postagens(id)
     );
     `);
@@ -40,18 +40,19 @@ const validastring = (id: string) => {
 })();
 
 export async function insertPostagem(req: Request, res: Response) {
-    const { title, text, like } = req.body
+    const { title, text, likes } = req.body
     try {
         await client.query(`
-        INSERT INTO postagens (id,title, text, likes,data_criacao) VALUES ('${uuid()}',${title}, '${text}',${like} , DEFAULT)`)
-        res.sendStatus(201);
+        INSERT INTO postagens VALUES ('${uuid()}',${title}, '${text}',${likes ? likes : 0} , DEFAULT)`)
+            .then(() => {
+                res.sendStatus(201).send("Postagem inserida com sucesso!!");
+            })
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao inserir postagem: ${err.message}`)
-            res.sendStatus(400);
+            res.sendStatus(400).send(`Erro ao inserir postagem: ${err.message}`);
         }
     }
-
 }
 
 export async function retrievePostagem(req: Request, res: Response) {
@@ -160,7 +161,7 @@ export async function insertComentario(req: Request, res: Response) {
     }
     try {
         await client.query(`
-        INSERT INTO comentarios (id, text, postagem_id, data_criacao) VALUES ('${uuid()}', '${text}', '${id}', DEFAULT)`)
+        INSERT INTO comentarios VALUES ('${uuid()}', '${text}', '${id}', DEFAULT)`)
         res.sendStatus(201);
     } catch (err) {
         if (err instanceof Error) {
