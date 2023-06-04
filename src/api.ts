@@ -1,9 +1,9 @@
 // import express from 'express';
-// import cors from 'cors';
+import cors from 'cors';
 
 // export const app = express();
 
-// app.use(cors({ origin: true }));
+
 
 // app.use(express.json());
 // app.use(express.raw({ type: 'application/vnd.custom-type' }));
@@ -27,6 +27,7 @@ import express, { Application, Request, Response } from 'express';
 import router from './router.js';
 
 const app: Application = express();
+app.use(cors({ origin: true }));
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static('public'));
