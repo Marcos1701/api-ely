@@ -26,7 +26,7 @@ import cors from 'cors';
 import express, { Application, Request, Response } from 'express';
 import router from './router.js';
 
-const app: Application = express();
+export const app: Application = express();
 app.use(cors({ origin: true }));
 
 app.use(express.urlencoded({ extended: true }))
@@ -45,3 +45,4 @@ app.use(function (req: Request, res: Response, next: Function) {
 app.listen(3000, () => {
     console.log('Servidor rodando na porta 3000');
 });
+
