@@ -41,8 +41,3 @@ app.get('/', (req: Request, res: Response) => {
 app.use(function (req: Request, res: Response, next: Function) {
     res.status(404).send('Sorry cant find that!');
 });
-
-app.listen(3000, () => {
-    console.log('Servidor rodando na porta 3000');
-});
-
