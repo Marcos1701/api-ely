@@ -45,9 +45,10 @@ export async function insertPostagem(req: Request, res: Response) {
     const { title, text, like } = req.body
     const likes: number = Number(like)
     try {
+        const id = uuid()
         await client.query(`
-        INSERT INTO postagens VALUES ('${uuid()}','${title}', '${text}',${(!isNaN(likes)) ? likes : 0} , DEFAULT)`)
-        res.sendStatus(201);
+        INSERT INTO postagens VALUES ('${id}','${title}', '${text}',${(!isNaN(likes)) ? likes : 0} , DEFAULT)`)
+        res.sendStatus(201).json({ "id": id });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao inserir postagem: ${err.message}`)
@@ -107,7 +108,9 @@ export async function updatePostagem(req: Request, res: Response) {
             await client.query(`
             UPDATE postagens SET text = '${text}' WHERE id = '${id}'`)
         }
-        res.sendStatus(200);
+        const novaPostagem = await client.query(`
+        SELECT * FROM postagens WHERE id = '${id}'`)
+        res.sendStatus(200).json({ "postagem": novaPostagem.rows });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao atualizar postagem: ${err.message}`)
@@ -162,9 +165,10 @@ export async function insertComentario(req: Request, res: Response) {
         res.sendStatus(400);
     }
     try {
+        const id_comentario = uuid()
         await client.query(`
-        INSERT INTO comentarios VALUES ('${uuid()}', '${text}', '${id}', DEFAULT)`)
-        res.sendStatus(201);
+        INSERT INTO comentarios VALUES ('${id_comentario}', '${text}', '${id}', DEFAULT)`)
+        res.sendStatus(201).json({"id": id_comentario});
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao inserir comentario: ${err.message}`)
@@ -219,7 +223,10 @@ export async function updateComentario(req: Request, res: Response) {
     try {
         await client.query(`
         UPDATE comentarios SET text = '${text}' WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
-        res.sendStatus(200);
+
+        const novoComentario = await client.query(`
+        SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
+        res.sendStatus(200).json({ "comentario": novoComentario.rows });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao atualizar comentario: ${err.message}`)
