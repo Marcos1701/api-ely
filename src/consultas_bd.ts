@@ -67,7 +67,7 @@ export async function retrievePostagem(req: Request, res: Response) {
     try {
         const postagem = await client.query(`
         SELECT * FROM postagens WHERE id = '${id}'`)
-        res.json({ postagem: postagem.rows })
+        res.status(200).json({ postagem: postagem.rows })
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao buscar postagem: ${err.message}`)
@@ -80,7 +80,7 @@ export async function retrieveAllPostagens(req: Request, res: Response) {
     try {
         const postagens = await client.query(`
         SELECT * FROM postagens`)
-        res.json({ postagens: postagens.rows })
+        res.status(200).json({ postagens: postagens.rows })
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao buscar postagens: ${err.message}`)
