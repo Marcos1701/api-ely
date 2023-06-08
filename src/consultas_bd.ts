@@ -43,12 +43,12 @@ const validastring = (id: string) => {
 
 export async function insertPostagem(req: Request, res: Response) {
     const { title, text, likes } = req.body
-    const qtd_likes: number = Number(like)
+    const qtd_likes: number = Number(likes)
     try {
         const id: string = uuid()
         await client.query(`
         INSERT INTO postagens VALUES ('${id}','${title}', '${text}',${(!isNaN(qtd_likes)) ? qtd_likes : 0} , DEFAULT)`)
-        res.sendStatus(201).json({"id": id });
+        res.status(201).json({"id": id });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao inserir postagem: ${err.message}`)
@@ -110,7 +110,7 @@ export async function updatePostagem(req: Request, res: Response) {
         }
         const novaPostagem = await client.query(`
         SELECT * FROM postagens WHERE id = '${id}'`)
-        res.sendStatus(200).json({ "postagem": novaPostagem.rows });
+        res.status(200).json({ "postagem": novaPostagem.rows });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao atualizar postagem: ${err.message}`)
@@ -148,7 +148,7 @@ export async function curtirPostagem(req: Request, res: Response) {
         UPDATE postagens SET likes = likes + 1 WHERE id = '${id}'`)
         const likes = await client.query(`
         SELECT likes FROM postagens WHERE id = '${id}'`)
-        res.sendStatus(200).json({ "likes": likes.rows })
+        res.status(200).json({ "likes": likes.rows })
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao curtir postagem: ${err.message}`)
@@ -168,7 +168,7 @@ export async function insertComentario(req: Request, res: Response) {
         const id_comentario = uuid()
         await client.query(`
         INSERT INTO comentarios VALUES ('${id_comentario}', '${text}', '${id}', DEFAULT)`)
-        res.sendStatus(201).json({"id": id_comentario});
+        res.status(201).json({"id": id_comentario});
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao inserir comentario: ${err.message}`)
@@ -205,7 +205,7 @@ export async function retrieveAllComentariostoPostagem(req: Request, res: Respon
     try {
         const comentarios = await client.query(`
         SELECT * FROM comentarios WHERE postagem_id = '${id}'`)
-        res.json({ "comentarios": comentarios.rows })
+        res.status(200).json({ "comentarios": comentarios.rows })
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao buscar comentarios: ${err.message}`)
@@ -226,7 +226,7 @@ export async function updateComentario(req: Request, res: Response) {
 
         const novoComentario = await client.query(`
         SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
-        res.sendStatus(200).json({ "comentario": novoComentario.rows });
+        res.status(200).json({ "comentario": novoComentario.rows });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao atualizar comentario: ${err.message}`)
