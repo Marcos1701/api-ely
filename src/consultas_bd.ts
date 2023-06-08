@@ -79,7 +79,8 @@ export async function retrievePostagem(req: Request, res: Response) {
 export async function retrieveAllPostagens(req: Request, res: Response) {
     try {
         const postagens = await client.query(`
-        SELECT * FROM postagens`)
+        SELECT * FROM postagens
+        order by data_criacao`)
         res.status(200).json({ "postagens": postagens.rows })
     } catch (err) {
         if (err instanceof Error) {
@@ -184,7 +185,8 @@ export async function retrieveComentario(req: Request, res: Response) {
     }
     try {
         await client.query(`
-        SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
+        SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'
+        order by data_criacao`)
             .then((comentario) => {
                 res.json({ "comentario": comentario.rows })
             })
