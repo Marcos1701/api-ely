@@ -48,7 +48,7 @@ export async function insertPostagem(req: Request, res: Response) {
         const id: string = uuid()
         await client.query(`
         INSERT INTO postagens VALUES ('${id}','${title}', '${text}',${(!isNaN(qtd_likes)) ? qtd_likes : 0} , DEFAULT)`)
-        res.status(201).json({"id": id });
+        res.status(201).json({ "id": id });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao inserir postagem: ${err.message}`)
@@ -149,7 +149,8 @@ export async function curtirPostagem(req: Request, res: Response) {
         UPDATE postagens SET likes = likes + 1 WHERE id = '${id}'`)
         const likes = await client.query(`
         SELECT likes FROM postagens WHERE id = '${id}'`)
-        res.status(200).json({ "likes": likes.rows })
+        const qtd_likes = likes.rows[0].likes
+        res.status(200).json({ "likes": qtd_likes });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao curtir postagem: ${err.message}`)
@@ -169,7 +170,7 @@ export async function insertComentario(req: Request, res: Response) {
         const id_comentario = uuid()
         await client.query(`
         INSERT INTO comentarios VALUES ('${id_comentario}', '${text}', '${id}', DEFAULT)`)
-        res.status(201).json({"id": id_comentario});
+        res.status(201).json({ "id": id_comentario });
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao inserir comentario: ${err.message}`)
