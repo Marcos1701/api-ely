@@ -162,12 +162,12 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION LOGIN(nome_de_usuario varchar, senha varchar)
+        CREATE OR REPLACE FUNCTION LOGIN(nome_usuario varchar, senha_usuario varchar)
         RETURNS VARCHAR AS $$
         DECLARE
             token varchar;
         BEGIN
-            SELECT token INTO token FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario AND usuarios.senha = senha;
+            SELECT token INTO token FROM usuarios WHERE nome_de_usuario = nome_usuario AND usuarios.senha = senha_usuario;
             IF token IS NULL THEN
                 RAISE EXCEPTION 'Usuário ou senha incorretos';
             END IF;
@@ -177,20 +177,20 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION REGISTRAR(nome_de_usuario varchar, senha varchar, TOKEN varchar)
+        CREATE OR REPLACE FUNCTION REGISTRAR(nome_usuario varchar, senha varchar, TOKEN varchar)
         RETURNS VOID AS $$
         DECLARE
             id_usuario varchar;
             token varchar;
         BEGIN
-            SELECT id_usuario INTO id_usuario FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario;
+            SELECT id_usuario INTO id_usuario FROM usuarios WHERE usuarios.nome_de_usuario = nome_usuario;
             IF id_usuario IS NOT NULL THEN
                 RAISE EXCEPTION 'Usuário já existe';
             END IF;
 
             SELECT uuid_generate_v4() INTO id_usuario;
             
-            INSERT INTO usuarios VALUES(id_usuario, nome_de_usuario, senha, TOKEN);
+            INSERT INTO usuarios VALUES(id_usuario, nome_usuario, senha, TOKEN);
             RAISE NOTICE 'Usuário registrado com sucesso';
             
         END;
@@ -227,7 +227,7 @@ export async function insertUsuario(req: Request, res: Response) {
         .digest('base64').replace(/=/g, '');
 
     const token = data + "." + signature;
-    if (!validastring(nome_de_usuario) && !validastring(senha)) {
+    if (!validastring(nome_de_usuario) || !validastring(senha)) {
         res.sendStatus(400);
     };
     await client.query(`SELECT REGISTRAR('${nome_de_usuario}', '${senha}', '${token}')`)
