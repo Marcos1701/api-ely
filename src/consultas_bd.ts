@@ -17,7 +17,7 @@ const validastring = (id: string) => {
 
         await client.query(`
         CREATE TABLE IF NOT EXISTS usuarios (
-            id VARCHAR not null PRIMARY KEY,
+            id varchar not null PRIMARY KEY,
             nome_de_usuario varchar NOT NULL,
             senha varchar NOT NULL,
             token varchar not null
@@ -98,35 +98,33 @@ const validastring = (id: string) => {
     `);
 
         console.log("Banco de dados conectado com sucesso!!")
-        // console.log("Tabelas criadas com sucesso!")
     } catch (err) {
         if (err instanceof Error) {
-            // console.log(`Erro ao criar tabelas: ${err.message}`)
             console.error(err);
         }
     }
 })();
 
-const confereTokenpostagem = async (token: string, id_postagem: string) => {
-    const id_usuario = await client.query(`SELECT id_usuario FROM postagens WHERE id = '${id_postagem}'`).rows[0].id_usuario
-    const token_usuario = await client.query(`SELECT token FROM usuarios WHERE id = '${id_usuario}'`).rows[0].token
-    if (token_usuario === token) {
+const confereTokenpostagem = async (token_usuario: string, id_postagem: string) => {
+    const { id_usuario } = await client.query(`SELECT id_usuario FROM postagens WHERE id = '${id_postagem}'`)
+    const { token } = await client.query(`SELECT token FROM usuarios WHERE id = '${id_usuario}'`)
+    if (token === token_usuario) {
         return true
     }
     return false
 }
 
-const confereTokenComentario = async (token: string, id_comentario: string) => {
-    const id_usuario = await client.query(`SELECT id_usuario FROM comentarios WHERE id = '${id_comentario}'`).rows[0].id_usuario
-    const token_usuario = await client.query(`SELECT token FROM usuarios WHERE id = '${id_usuario}'`).rows[0].token
-    if (token_usuario === token) {
+const confereTokenComentario = async (token_usuario: string, id_comentario: string) => {
+    const { id_usuario } = await client.query(`SELECT id_usuario FROM comentarios WHERE id = '${id_comentario}'`)
+    const { token } = await client.query(`SELECT token FROM usuarios WHERE id = '${id_usuario}'`)
+    if (token === token_usuario) {
         return true
     }
     return false
 }
 
 const confereTokenUsuario = async (token: string) => {
-    const usuario = await client.query(`SELECT * FROM usuarios WHERE token = '${token}'`).rows[0].token
+    const usuario = await client.query(`SELECT * FROM usuarios WHERE token = '${token}'`)
     if (usuario.rows.count === 0) {
         return false
     }
@@ -294,9 +292,9 @@ export async function curtirPostagem(req: Request, res: Response) {
         res.status(400).send("Token inválido");
     }
     try {
-        const retorno = await client.query(`
+        const { likes } = await client.query(`
         SELECT CURTIR_POSTAGEM('${token}', '${id}')`)
-        const likes = retorno.rows[0].curtir_postagem
+
         res.status(200).json({ "likes": likes });
 
     } catch (err) {
