@@ -1,8 +1,8 @@
 import { Request, Response } from 'express'
 
 import { client } from './conf_bd_pg.js'
-import { v4 as uuid } from 'uuid'
-import crypto from 'crypto'
+// import { v4 as uuid } from 'uuid'
+import * as crypto from 'crypto'
 
 const validastring = (id: string) => {
     if (id === '' || id === undefined || id === null) {
@@ -229,7 +229,7 @@ export async function insertUsuario(req: Request, res: Response) {
     const token = data + "." + signature;
     if (!validastring(nome_de_usuario) && !validastring(senha)) {
         res.sendStatus(400);
-    }
+    };
     await client.query(`SELECT REGISTRAR('${nome_de_usuario}', '${senha}', '${token}')`)
         .catch((err) => {
             if (err instanceof Error) {
