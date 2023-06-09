@@ -86,16 +86,16 @@ const validastring = (id: string) => {
         CREATE OR REPLACE FUNCTION REGISTRAR(nome_de_usuario varchar, senha varchar, token varchar)
         RETURNS VOID AS $$
         DECLARE
-            id_user varchar;
+            id_usuario varchar;
         BEGIN
-            SELECT id_usuario INTO id_user FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario;
-            IF id_user IS NOT NULL THEN
+            SELECT id INTO id_usuario FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario;
+            IF id_usuario IS NOT NULL THEN
                 RAISE EXCEPTION 'Usuário já existe';
             END IF;
 
-            SELECT uuid_generate_v4() INTO id_user;
+            SELECT uuid_generate_v4() INTO id_usuario;
             
-            INSERT INTO usuarios VALUES(id_user, nome_de_usuario, senha, token);
+            INSERT INTO usuarios VALUES(id_usuario, nome_de_usuario, senha, token);
             RAISE NOTICE 'Usuário registrado com sucesso';
             
         END;
@@ -288,7 +288,8 @@ export async function deletePostagem(req: Request, res: Response) {
 }
 
 export async function curtirPostagem(req: Request, res: Response) {
-    const { id, token } = req.params
+    const { id } = req.params
+    const { token } = req.body
 
     if (!validastring(id) || !validastring(token)) {
         res.sendStatus(400);
