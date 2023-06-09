@@ -68,7 +68,7 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION EXCLUIR_POSTAGEM(id_postagem varchar, token varchar)
+        CREATE OR REPLACE FUNCTION EXCLUIR_POSTAGEM(id_postagem varchar, token_usuario varchar)
         RETURNS VOID AS $$
         DECLARE
             id_usuario varchar;
@@ -77,11 +77,11 @@ const validastring = (id: string) => {
             IF id_usuario IS NULL THEN
                 RAISE EXCEPTION 'Postagem não existe';
             END IF;
-            IF token IS NULL THEN
+            IF token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Token não existe';
             END IF;
 
-            IF id_usuario != (SELECT id_usuario FROM usuarios WHERE token = token) THEN
+            IF id_usuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
                 RAISE EXCEPTION 'Usuário não tem permissão para excluir a postagem';
             ELSE
                 DELETE FROM postagens WHERE id = id_postagem;
@@ -92,7 +92,7 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION EXCLUIR_COMENTARIO(id_comentario varchar, token varchar)
+        CREATE OR REPLACE FUNCTION EXCLUIR_COMENTARIO(id_comentario varchar, token_usuario varchar)
         RETURNS VOID AS $$
         DECLARE
             id_usuario varchar;
@@ -101,11 +101,11 @@ const validastring = (id: string) => {
             IF id_usuario IS NULL THEN
                 RAISE EXCEPTION 'Comentário não existe';
             END IF;
-            IF token IS NULL THEN
+            IF token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Token não existe';
             END IF;
 
-            IF id_usuario != (SELECT id_usuario FROM usuarios WHERE token = token) THEN
+            IF id_usuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
                 RAISE EXCEPTION 'Usuário não tem permissão para excluir o comentário';
             ELSE
                 DELETE FROM comentarios WHERE id = id_comentario;
@@ -116,18 +116,18 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION INSERIR_COMENTARIO(id_postagem varchar, token varchar, text varchar)
+        CREATE OR REPLACE FUNCTION INSERIR_COMENTARIO(id_postagem varchar, token_usuario varchar, text varchar)
         RETURNS VARCHAR AS $$
         DECLARE
             id_usuario varchar;
             id_comentario varchar;
         BEGIN
 
-            SELECT id_usuario INTO id_usuario FROM usuarios WHERE usuarios.token = token;
+            SELECT id_usuario INTO id_usuario FROM usuarios WHERE usuarios.token = token_usuario;
             IF NOT EXISTS (SELECT * FROM postagens WHERE id = id_postagem) THEN
                 RAISE EXCEPTION 'Postagem não existe';
             END IF;
-            IF token IS NULL THEN
+            IF token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Token não existe';
             END IF;
 
@@ -141,14 +141,14 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION INSERIR_POSTAGEM(token varchar, title varchar, text varchar)
+        CREATE OR REPLACE FUNCTION INSERIR_POSTAGEM(token_usuario varchar, title varchar, text varchar)
         RETURNS VARCHAR AS $$
         DECLARE
             id_usuario varchar;
             id_postagem VARCHAR;
         BEGIN
-            SELECT id_usuario INTO id_usuario FROM usuarios WHERE usuarios.token = token;
-            IF token IS NULL THEN
+            SELECT id_usuario INTO id_usuario FROM usuarios WHERE token = token_usuario;
+            IF token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Token não existe';
             END IF;
 
@@ -162,35 +162,35 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION LOGIN(nome_usuario varchar, senha_usuario varchar)
+        CREATE OR REPLACE FUNCTION LOGIN(nome_de_usuario varchar, senha varchar)
         RETURNS VARCHAR AS $$
         DECLARE
-            token varchar;
+        token_usuario varchar;
         BEGIN
-            SELECT token INTO token FROM usuarios WHERE nome_de_usuario = nome_usuario AND usuarios.senha = senha_usuario;
-            IF token IS NULL THEN
+            SELECT token INTO token_usuario FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario AND usuarios.senha = senha;
+            IF token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Usuário ou senha incorretos';
             END IF;
-            RETURN token;
+            RETURN token_usuario;
         END;
         $$ LANGUAGE plpgsql;
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION REGISTRAR(nome_usuario varchar, senha varchar, token varchar)
+        CREATE OR REPLACE FUNCTION REGISTRAR(nome_de_usuario varchar, senha varchar, token_usuario varchar)
         RETURNS VOID AS $$
         DECLARE
-            id_usuario varchar;
+            id_user varchar;
             token varchar;
         BEGIN
-            SELECT id_usuario INTO id_usuario FROM usuarios WHERE usuarios.nome_de_usuario = nome_usuario;
-            IF id_usuario IS NOT NULL THEN
+            SELECT id_usuario INTO id_user FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario;
+            IF id_user IS NOT NULL THEN
                 RAISE EXCEPTION 'Usuário já existe';
             END IF;
 
-            SELECT uuid_generate_v4() INTO id_usuario;
+            SELECT uuid_generate_v4() INTO id_user;
             
-            INSERT INTO usuarios VALUES(id_usuario, nome_usuario, senha, TOKEN);
+            INSERT INTO usuarios VALUES(id_user, nome_de_usuario, senha, token_usuario);
             RAISE NOTICE 'Usuário registrado com sucesso';
             
         END;
