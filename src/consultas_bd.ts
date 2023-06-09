@@ -83,19 +83,19 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION REGISTRAR(nome_usuario varchar, senha varchar, token varchar)
+        CREATE OR REPLACE FUNCTION INSERIR_USUARIO(nome varchar, senha varchar, token varchar)
         RETURNS VOID AS $$
         DECLARE
             id_usuario varchar;
         BEGIN
-            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome_usuario;
+            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome;
             IF id_usuario IS NOT NULL THEN
                 RAISE EXCEPTION 'Usuário já existe';
             END IF;
 
             SELECT uuid_generate_v4() INTO id_usuario;
             
-            INSERT INTO usuarios VALUES(id_usuario, nome_usuario, senha, token);
+            INSERT INTO usuarios (id, nome_de_usuario, senha, token) VALUES (id_usuario, nome, senha, token);
             RAISE NOTICE 'Usuário registrado com sucesso';
             
         END;
@@ -162,7 +162,7 @@ export async function insertUsuario(req: Request, res: Response) {
     if (!validastring(nome_de_usuario) || !validastring(senha)) {
         res.sendStatus(400);
     };
-    await client.query(`SELECT REGISTRAR('${nome_de_usuario}', '${senha}', '${token}')`)
+    await client.query(`SELECT INSERIR_USUARIO('${nome_de_usuario}', '${senha}', '${token}')`)
         .catch((err) => {
             if (err instanceof Error) {
                 console.log(`Erro ao inserir usuario: ${err.message}`)
