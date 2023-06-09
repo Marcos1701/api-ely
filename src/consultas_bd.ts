@@ -68,100 +68,6 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION EXCLUIR_POSTAGEM(id_postagem varchar, token_usuario varchar)
-        RETURNS VOID AS $$
-        DECLARE
-        idUsuario varchar;
-        BEGIN
-            SELECT id_usuario INTO idUsuario FROM postagens WHERE id = id_postagem;
-            IF idUsuario IS NULL THEN
-                RAISE EXCEPTION 'Postagem não existe';
-            END IF;
-            IF token_usuario IS NULL THEN
-                RAISE EXCEPTION 'Token não existe';
-            END IF;
-
-            IF idUsuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
-                RAISE EXCEPTION 'Usuário não tem permissão para excluir a postagem';
-            ELSE
-                DELETE FROM postagens WHERE id = id_postagem;
-                RAISE NOTICE 'Postagem excluída com sucesso';
-            END IF;
-        END;
-        $$ LANGUAGE plpgsql;
-    `);
-
-        await client.query(`
-        CREATE OR REPLACE FUNCTION EXCLUIR_COMENTARIO(id_comentario varchar, token_usuario varchar)
-        RETURNS VOID AS $$
-        DECLARE
-            idUsuario varchar;
-        BEGIN
-            SELECT id_usuario INTO idUsuario FROM comentarios WHERE id = id_comentario;
-            IF idUsuario IS NULL THEN
-                RAISE EXCEPTION 'Comentário não existe';
-            END IF;
-            IF token_usuario IS NULL THEN
-                RAISE EXCEPTION 'Token não existe';
-            END IF;
-
-            IF idUsuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
-                RAISE EXCEPTION 'Usuário não tem permissão para excluir o comentário';
-            ELSE
-                DELETE FROM comentarios WHERE id = id_comentario;
-                RAISE NOTICE 'Comentário excluído com sucesso';
-            END IF;
-        END;
-        $$ LANGUAGE plpgsql;
-    `);
-
-        await client.query(`
-        CREATE OR REPLACE FUNCTION INSERIR_COMENTARIO(id_postagem varchar, token_usuario varchar, text varchar)
-        RETURNS VARCHAR AS $$
-        DECLARE
-            id_user varchar;
-            id_comentario varchar;
-        BEGIN
-
-            SELECT id_usuario INTO id_user FROM usuarios WHERE token = token_usuario;
-            IF NOT EXISTS (SELECT * FROM postagens WHERE id = id_postagem) THEN
-                RAISE EXCEPTION 'Postagem não existe';
-            END IF;
-            IF token_usuario IS NULL THEN
-                RAISE EXCEPTION 'Token não existe';
-            END IF;
-
-            SELECT uuid_generate_v4() INTO id_comentario;
-
-            INSERT INTO comentarios VALUES(id_comentario, id_user, text, id_postagem);
-            RAISE NOTICE 'Comentário inserido com sucesso';
-            RETURN id_comentario;
-        END;
-        $$ LANGUAGE plpgsql;
-    `);
-
-        await client.query(`
-        CREATE OR REPLACE FUNCTION INSERIR_POSTAGEM(token_usuario varchar, title varchar, text varchar)
-        RETURNS VARCHAR AS $$
-        DECLARE
-            id_usuario varchar;
-            id_postagem VARCHAR;
-        BEGIN
-            SELECT id_usuario INTO id_usuario FROM usuarios WHERE token = token_usuario;
-            IF token_usuario IS NULL THEN
-                RAISE EXCEPTION 'Token não existe';
-            END IF;
-
-            SELECT uuid_generate_v4() INTO id_postagem;
-            INSERT INTO postagens VALUES(id_postagem, id_usuario, title, text, 0);
-
-            RAISE NOTICE 'Postagem inserida com sucesso';
-            RETURN id_postagem;
-        END;
-        $$ LANGUAGE plpgsql;
-    `);
-
-        await client.query(`
         CREATE OR REPLACE FUNCTION LOGIN(nome_de_usuario varchar, senha varchar)
         RETURNS VARCHAR AS $$
         DECLARE
@@ -177,7 +83,7 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION REGISTRAR(nome_de_usuario varchar, senha varchar, token_usuario varchar)
+        CREATE OR REPLACE FUNCTION REGISTRAR(nome_de_usuario varchar, senha varchar, token varchar)
         RETURNS VOID AS $$
         DECLARE
             id_user varchar;
@@ -189,7 +95,7 @@ const validastring = (id: string) => {
 
             SELECT uuid_generate_v4() INTO id_user;
             
-            INSERT INTO usuarios VALUES(id_user, nome_de_usuario, senha, token_usuario);
+            INSERT INTO usuarios VALUES(id_user, nome_de_usuario, senha, token);
             RAISE NOTICE 'Usuário registrado com sucesso';
             
         END;
@@ -200,10 +106,37 @@ const validastring = (id: string) => {
         // console.log("Tabelas criadas com sucesso!")
     } catch (err) {
         if (err instanceof Error) {
-            console.log(`Erro ao criar tabelas: ${err.message}`)
+            // console.log(`Erro ao criar tabelas: ${err.message}`)
+            console.error(err);
         }
     }
 })();
+
+const confereTokenpostagem = async (token: string, id_postagem: string) => {
+    const id_usuario = await client.query(`SELECT id_usuario FROM postagens WHERE id = '${id_postagem}'`).rows[0].id_usuario
+    const token_usuario = await client.query(`SELECT token FROM usuarios WHERE id = '${id_usuario}'`).rows[0].token
+    if (token_usuario === token) {
+        return true
+    }
+    return false
+}
+
+const confereTokenComentario = async (token: string, id_comentario: string) => {
+    const id_usuario = await client.query(`SELECT id_usuario FROM comentarios WHERE id = '${id_comentario}'`).rows[0].id_usuario
+    const token_usuario = await client.query(`SELECT token FROM usuarios WHERE id = '${id_usuario}'`).rows[0].token
+    if (token_usuario === token) {
+        return true
+    }
+    return false
+}
+
+const confereTokenUsuario = async (token: string) => {
+    const usuario = await client.query(`SELECT * FROM usuarios WHERE token = '${token}'`).rows[0].token
+    if (usuario.rows.count === 0) {
+        return false
+    }
+    return true
+}
 
 export async function insertUsuario(req: Request, res: Response) {
     const { nome_de_usuario, senha } = req.body
@@ -241,12 +174,12 @@ export async function insertUsuario(req: Request, res: Response) {
 }
 
 export async function retrieveUsuario(req: Request, res: Response) {
-    const { id } = req.params
-    if (!validastring(id)) {
+    const { nome_de_usuario } = req.params
+    if (!validastring(nome_de_usuario)) {
         res.sendStatus(400);
     }
     try {
-        const usuario = await client.query(`SELECT * FROM usuarios WHERE id = '${id}'`)
+        const usuario = await client.query(`SELECT * FROM usuarios WHERE nome_de_usuario = '${nome_de_usuario}'`)
         res.status(200).json({ "usuario": usuario.rows })
     } catch (err) {
         if (err instanceof Error) {
@@ -279,6 +212,10 @@ export async function insertPostagem(req: Request, res: Response) {
         res.status(400).send("Dados inválidos");
     }
 
+    if (!confereTokenUsuario(token)) {
+        res.status(400).send("Token inválido");
+    }
+
     try {
         const id = await client.query(`SELECT INSERIR_POSTAGEM('${token}', '${title}', '${text}')`)
         res.status(201).json({ "id": id });
@@ -293,8 +230,8 @@ export async function insertPostagem(req: Request, res: Response) {
 
 export async function retrievePostagem(req: Request, res: Response) {
 
-    const { id } = req.params
-    if (!validastring(id)) {
+    const { id, token } = req.params
+    if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
         res.sendStatus(400);
     }
     try {
@@ -311,6 +248,10 @@ export async function retrievePostagem(req: Request, res: Response) {
 
 export async function retrieveAllPostagens(req: Request, res: Response) {
     try {
+        const { token } = req.body
+        if (!validastring(token) || !confereTokenUsuario(token)) {
+            res.sendStatus(400);
+        }
         const postagens = await client.query(`
             SELECT * FROM postagens
             `)
@@ -323,46 +264,20 @@ export async function retrieveAllPostagens(req: Request, res: Response) {
     }
 }
 
-// export async function updatePostagem(req: Request, res: Response) {
-//     const { id } = req.params
-//     let { title, text, likes, token } = req.body
-//     likes = parseInt(likes)
-//     if (!validastring(text) && isNaN(likes) && validastring(title) || !validastring(id)) {
-//         res.sendStatus(400);
-//     }
-//     try {
-//         if (likes && title && text && !isNaN(likes)) {
-//             await client.query(`
-//             UPDATE postagens SET title = '${title}', text = '${text}', likes = ${likes} WHERE id = '${id}'`)
-
-//         } else if (!isNaN(likes)) {
-//             await client.query(`
-//             UPDATE postagens SET text = '${text}', likes = ${likes} WHERE id = '${id}'`)
-//         } else {
-//             await client.query(`
-//             UPDATE postagens SET text = '${text}' WHERE id = '${id}'`)
-//         }
-//         const novaPostagem = await client.query(`
-//     SELECT * FROM postagens WHERE id = '${id}'`)
-//         res.status(200).json({ "postagem": novaPostagem.rows });
-//     } catch (err) {
-//         if (err instanceof Error) {
-//             console.log(`Erro ao atualizar postagem: ${err.message} `)
-//             res.sendStatus(400);
-//         }
-//     }
-// }
 
 export async function deletePostagem(req: Request, res: Response) {
     const { id } = req.params
     const { token } = req.body
 
-    if (!validastring(id) || !validastring(token)) {
+    if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
         res.sendStatus(400);
+    }
+    if (!confereTokenpostagem(id, token)) {
+        res.status(400).send("Usuário não autorizado")
     }
     try {
         await client.query(`
-        SELECT DELETAR_POSTAGEM('${token}', '${id}')`)
+        DELETE FROM postagens WHERE id = '${id}'`)
         res.sendStatus(204);
     } catch (err) {
         if (err instanceof Error) {
@@ -377,6 +292,9 @@ export async function curtirPostagem(req: Request, res: Response) {
 
     if (!validastring(id) || !validastring(token)) {
         res.sendStatus(400);
+    }
+    if (!confereTokenUsuario(token)) {
+        res.status(400).send("Token inválido");
     }
     try {
         const retorno = await client.query(`
@@ -399,6 +317,10 @@ export async function insertComentario(req: Request, res: Response) {
     if (!validastring(id) || !validastring(token) || !validastring(text)) {
         res.sendStatus(400);
     }
+
+    if (!confereTokenUsuario(token)) {
+        res.status(400).send("Token inválido");
+    }
     try {
         const id_comentario = await client.query(`
         SELECT INSERIR_COMENTARIO('${token}', '${id}', '${text}')`)
@@ -413,8 +335,13 @@ export async function insertComentario(req: Request, res: Response) {
 
 export async function retrieveComentario(req: Request, res: Response) {
     const { id, id_comentario } = req.params
-    if (!validastring(id) || !validastring(id_comentario)) {
+    const { token } = req.body
+    if (!validastring(id) || !validastring(id_comentario) || !validastring(token) || !confereTokenUsuario(token)) {
         res.sendStatus(400);
+    }
+
+    if (!confereTokenUsuario(token)) {
+        res.status(400).send("Token inválido");
     }
     try {
         const comentario = await client.query(`
@@ -430,7 +357,8 @@ export async function retrieveComentario(req: Request, res: Response) {
 
 export async function retrieveAllComentariostoPostagem(req: Request, res: Response) {
     const { id } = req.params
-    if (!validastring(id)) {
+    const { token } = req.body
+    if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
         res.sendStatus(400);
     }
 
@@ -447,33 +375,15 @@ export async function retrieveAllComentariostoPostagem(req: Request, res: Respon
     }
 }
 
-// export async function updateComentario(req: Request, res: Response) {
-//     const { id, id_comentario } = req.params
-//     const { text } = req.body
-//     if (!text || !validastring(id_comentario) || !validastring(id)) {
-//         res.sendStatus(400);
-//     }
-//     try {
-//         await client.query(`
-//         UPDATE comentarios SET text = '${text}' WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
-
-//         const novoComentario = await client.query(`
-//     SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
-//         res.status(200).json({ "comentario": novoComentario.rows });
-//     } catch (err) {
-//         if (err instanceof Error) {
-//             console.log(`Erro ao atualizar comentario: ${err.message} `)
-//             res.sendStatus(400);
-//         }
-//     }
-// }
-
 export async function deleteComentario(req: Request, res: Response) {
     const { id, id_comentario } = req.params
-    if (!validastring(id_comentario) || !validastring(id)) {
+    const { token } = req.body
+    if (!validastring(id_comentario) || !validastring(id) || !validastring(token)) {
         res.sendStatus(400);
     }
-
+    if (!confereTokenComentario(id_comentario, token)) {
+        res.status(400).send("Usuário não autorizado")
+    }
     try {
         await client.query(`
         DELETE FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
