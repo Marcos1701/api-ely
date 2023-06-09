@@ -49,11 +49,11 @@ const validastring = (id: string) => {
         CREATE OR REPLACE FUNCTION curtir_postagem(id_postagem varchar, token varchar)
         RETURNS INT AS $$
         DECLARE
-            id_usuario varchar;
+            idUsuario varchar;
             qtd_likes INT;
         BEGIN
-            SELECT id_usuario INTO id_usuario FROM postagens WHERE id = id_postagem;
-            IF id_usuario IS NULL THEN
+            SELECT id_usuario INTO idUsuario FROM postagens WHERE id = id_postagem;
+            IF idUsuario IS NULL THEN
                 RAISE EXCEPTION 'Postagem não existe';
             END IF;
             IF token IS NULL THEN
@@ -71,17 +71,17 @@ const validastring = (id: string) => {
         CREATE OR REPLACE FUNCTION EXCLUIR_POSTAGEM(id_postagem varchar, token_usuario varchar)
         RETURNS VOID AS $$
         DECLARE
-            id_usuario varchar;
+        idUsuario varchar;
         BEGIN
-            SELECT id_usuario INTO id_usuario FROM postagens WHERE id = id_postagem;
-            IF id_usuario IS NULL THEN
+            SELECT id_usuario INTO idUsuario FROM postagens WHERE id = id_postagem;
+            IF idUsuario IS NULL THEN
                 RAISE EXCEPTION 'Postagem não existe';
             END IF;
             IF token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Token não existe';
             END IF;
 
-            IF id_usuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
+            IF idUsuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
                 RAISE EXCEPTION 'Usuário não tem permissão para excluir a postagem';
             ELSE
                 DELETE FROM postagens WHERE id = id_postagem;
@@ -95,17 +95,17 @@ const validastring = (id: string) => {
         CREATE OR REPLACE FUNCTION EXCLUIR_COMENTARIO(id_comentario varchar, token_usuario varchar)
         RETURNS VOID AS $$
         DECLARE
-            id_usuario varchar;
+            idUsuario varchar;
         BEGIN
-            SELECT id_usuario INTO id_usuario FROM comentarios WHERE id = id_comentario;
-            IF id_usuario IS NULL THEN
+            SELECT id_usuario INTO idUsuario FROM comentarios WHERE id = id_comentario;
+            IF idUsuario IS NULL THEN
                 RAISE EXCEPTION 'Comentário não existe';
             END IF;
             IF token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Token não existe';
             END IF;
 
-            IF id_usuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
+            IF idUsuario != (SELECT id_usuario FROM usuarios WHERE token = token_usuario) THEN
                 RAISE EXCEPTION 'Usuário não tem permissão para excluir o comentário';
             ELSE
                 DELETE FROM comentarios WHERE id = id_comentario;
@@ -119,11 +119,11 @@ const validastring = (id: string) => {
         CREATE OR REPLACE FUNCTION INSERIR_COMENTARIO(id_postagem varchar, token_usuario varchar, text varchar)
         RETURNS VARCHAR AS $$
         DECLARE
-            id_usuario varchar;
+            id_user varchar;
             id_comentario varchar;
         BEGIN
 
-            SELECT id_usuario INTO id_usuario FROM usuarios WHERE usuarios.token = token_usuario;
+            SELECT id_usuario INTO id_user FROM usuarios WHERE token = token_usuario;
             IF NOT EXISTS (SELECT * FROM postagens WHERE id = id_postagem) THEN
                 RAISE EXCEPTION 'Postagem não existe';
             END IF;
@@ -133,7 +133,7 @@ const validastring = (id: string) => {
 
             SELECT uuid_generate_v4() INTO id_comentario;
 
-            INSERT INTO comentarios VALUES(id_comentario, id_usuario, text, id_postagem);
+            INSERT INTO comentarios VALUES(id_comentario, id_user, text, id_postagem);
             RAISE NOTICE 'Comentário inserido com sucesso';
             RETURN id_comentario;
         END;
@@ -181,7 +181,6 @@ const validastring = (id: string) => {
         RETURNS VOID AS $$
         DECLARE
             id_user varchar;
-            token varchar;
         BEGIN
             SELECT id_usuario INTO id_user FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario;
             IF id_user IS NOT NULL THEN
