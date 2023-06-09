@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 
 import { client } from './conf_bd_pg.js'
-// import { v4 as uuid } from 'uuid'
+import { v4 as uuid } from 'uuid'
 import * as crypto from 'crypto'
 
 const validastring = (id: string) => {
@@ -17,7 +17,7 @@ const validastring = (id: string) => {
 
         await client.query(`
         CREATE TABLE IF NOT EXISTS usuarios (
-            id UUID not null PRIMARY KEY,
+            id VARCHAR not null PRIMARY KEY,
             nome_de_usuario varchar NOT NULL,
             senha varchar NOT NULL,
             token varchar not null
@@ -83,17 +83,12 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION INSERIR_USUARIO(nome varchar, senha varchar, token varchar)
+        CREATE OR REPLACE FUNCTION INSERIR_USUARIO(id_usuario varchar, nome varchar, senha varchar, token varchar)
         RETURNS VOID AS $$
-        DECLARE
-            id_usuario varchar;
         BEGIN
-            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome;
-            IF id_usuario IS NOT NULL THEN
+            IF EXISTS (SELECT id FROM usuarios WHERE nome_de_usuario = nome) THEN
                 RAISE EXCEPTION 'Usuário já existe';
             END IF;
-
-            SELECT uuid_generate_v4() INTO id_usuario;
             
             INSERT INTO usuarios (id, nome_de_usuario, senha, token) VALUES (id_usuario, nome, senha, token);
             RAISE NOTICE 'Usuário registrado com sucesso';
@@ -162,7 +157,7 @@ export async function insertUsuario(req: Request, res: Response) {
     if (!validastring(nome_de_usuario) || !validastring(senha)) {
         res.sendStatus(400);
     };
-    await client.query(`SELECT INSERIR_USUARIO('${nome_de_usuario}', '${senha}', '${token}')`)
+    await client.query(`SELECT INSERIR_USUARIO('${uuid()}','${nome_de_usuario}', '${senha}', '${token}')`)
         .catch((err) => {
             if (err instanceof Error) {
                 console.log(`Erro ao inserir usuario: ${err.message}`)
@@ -217,7 +212,8 @@ export async function insertPostagem(req: Request, res: Response) {
     }
 
     try {
-        const id = await client.query(`SELECT INSERIR_POSTAGEM('${token}', '${title}', '${text}')`)
+        const id = uuid()
+        await client.query(`INSERT INTO postagens (id, title, text, id_usuario) VALUES ('${id}', '${title}', '${text}', '${token}')`)
         res.status(201).json({ "id": id });
     } catch (err) {
         if (err instanceof Error) {
@@ -323,8 +319,8 @@ export async function insertComentario(req: Request, res: Response) {
         res.status(400).send("Token inválido");
     }
     try {
-        const id_comentario = await client.query(`
-        SELECT INSERIR_COMENTARIO('${token}', '${id}', '${text}')`)
+        const id_comentario = uuid()
+        await client.query(`INSERT INTO comentarios (id, text, id_usuario, postagem_id) VALUES ('${id_comentario}', '${text}', '${token}', '${id}')`)
         res.status(201).json({ "id": id_comentario });
     } catch (err) {
         if (err instanceof Error) {
