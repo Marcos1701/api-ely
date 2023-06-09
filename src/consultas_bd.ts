@@ -177,7 +177,7 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION REGISTRAR(nome_usuario varchar, senha varchar, TOKEN varchar)
+        CREATE OR REPLACE FUNCTION REGISTRAR(nome_usuario varchar, senha varchar, token varchar)
         RETURNS VOID AS $$
         DECLARE
             id_usuario varchar;
