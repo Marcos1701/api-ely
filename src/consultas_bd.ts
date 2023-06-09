@@ -83,19 +83,19 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION REGISTRAR(nome_de_usuario varchar, senha varchar, token varchar)
+        CREATE OR REPLACE FUNCTION REGISTRAR(nome_usuario varchar, senha varchar, token varchar)
         RETURNS VOID AS $$
         DECLARE
             id_usuario varchar;
         BEGIN
-            SELECT id INTO id_usuario FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario;
+            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome_usuario;
             IF id_usuario IS NOT NULL THEN
                 RAISE EXCEPTION 'Usuário já existe';
             END IF;
 
             SELECT uuid_generate_v4() INTO id_usuario;
             
-            INSERT INTO usuarios VALUES(id_usuario, nome_de_usuario, senha, token);
+            INSERT INTO usuarios VALUES(id_usuario, nome_usuario, senha, token);
             RAISE NOTICE 'Usuário registrado com sucesso';
             
         END;
