@@ -70,22 +70,19 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION LOGIN(nome varchar, senha varchar)
-        RETURNS VARCHAR AS $$
+        DROP FUNCTION IF EXISTS LOGIN;
+        CREATE OR REPLACE FUNCTION LOGIN(nome varchar, senha_usuario varchar)
+        RETURNS TABLE (token_usuario varchar, id_usuario varchar) AS $$
         DECLARE
         token_usuario varchar;
         id_usuario varchar;
-        retorno RECORD;
         BEGIN
-            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome AND usuarios.senha = senha;
+            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome AND senha = senha_usuario;
             SELECT token INTO token_usuario FROM usuarios WHERE id = id_usuario;
             IF id_usuario IS NULL OR token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Usuário ou senha incorretos';
             END IF;
-            
-            retorno.token_usuario := token_usuario;
-            retorno.id_usuario := id_usuario;
-            RETURN retorno;
+            RETURN QUERY SELECT token_usuario, id_usuario;
         END;
         $$ LANGUAGE plpgsql;
     `);
@@ -207,9 +204,11 @@ export async function realizaLogin(req: Request, res: Response) {
         if (!validastring(nome_de_usuario) && !validastring(senha)) {
             throw new Error("Dados inválidos");
         }
-        const { id, token } = await client.query(`SELECT LOGIN('${nome_de_usuario}', '${senha}')`)
+        const { token, id } = await client.query(`SELECT * FROM LOGIN('${nome_de_usuario}', '${senha}')`)
+
         res.status(200).json({
-            "id": id, "token": token
+            "id": id,
+            "token": token
         })
     } catch (err) {
         if (err instanceof Error) {
