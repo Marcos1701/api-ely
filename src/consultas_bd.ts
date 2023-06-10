@@ -133,46 +133,54 @@ const confereTokenUsuario = async (token: string) => {
 }
 
 export async function insertUsuario(req: Request, res: Response) {
-    const { nome_de_usuario, senha } = req.body
-    const header_token = JSON.stringify({
-        "alg": "HS256",
-        "typ": "JWT"
-    })
-
-    const payload_token = JSON.stringify({
-        "nome_de_usuario": nome_de_usuario,
-        "senha": senha
-    })
-
-    const base64Header = Buffer.from(header_token).toString('base64').replace(/=/g, '');
-    const base64Payload = Buffer.from(payload_token).toString('base64').replace(/=/g, '');
-
-    const data = base64Header + "." + base64Payload;
-    const signature = crypto.createHmac('sha256', data)
-        .update('segredo')
-        .digest('base64').replace(/=/g, '');
-
-    const token = data + "." + signature;
-    if (!validastring(nome_de_usuario) || !validastring(senha)) {
-        res.sendStatus(400);
-    };
-    await client.query(`SELECT INSERIR_USUARIO('${uuid()}','${nome_de_usuario}', '${senha}', '${token}')`)
-        .catch((err) => {
-            if (err instanceof Error) {
-                console.log(`Erro ao inserir usuario: ${err.message}`)
-                res.status(400).send(err.message);
-            }
+    try {
+        const { nome_de_usuario, senha } = req.body
+        const header_token = JSON.stringify({
+            "alg": "HS256",
+            "typ": "JWT"
         })
 
-    res.status(201).json({ "token": token });
+        const payload_token = JSON.stringify({
+            "nome_de_usuario": nome_de_usuario,
+            "senha": senha
+        })
+
+        const base64Header = Buffer.from(header_token).toString('base64').replace(/=/g, '');
+        const base64Payload = Buffer.from(payload_token).toString('base64').replace(/=/g, '');
+
+        const data = base64Header + "." + base64Payload;
+        const signature = crypto.createHmac('sha256', data)
+            .update('segredo')
+            .digest('base64').replace(/=/g, '');
+
+        const token = data + "." + signature;
+        if (!validastring(nome_de_usuario) || !validastring(senha)) {
+            throw new Error("Ops, nome de usuário ou senha inválidos");
+        };
+        await client.query(`SELECT INSERIR_USUARIO('${uuid()}','${nome_de_usuario}', '${senha}', '${token}')`)
+            .then(() => {
+                res.status(201).json({ "token": token });
+            })
+            .catch((err) => {
+                if (err instanceof Error) {
+                    console.log(`Erro ao inserir usuario: ${err.message}`)
+                    res.status(400).send(err.message);
+                }
+            })
+    } catch (err) {
+        if (err instanceof Error) {
+            console.log(`Erro ao inserir usuario: ${err.message}`)
+            res.status(400).send(err.message);
+        }
+    }
 }
 
 export async function retrieveUsuario(req: Request, res: Response) {
-    const { nome_de_usuario } = req.params
-    if (!validastring(nome_de_usuario)) {
-        res.sendStatus(400);
-    }
     try {
+        const { nome_de_usuario } = req.params
+        if (!validastring(nome_de_usuario)) {
+            throw new Error("Ops, nome de usuário inválido ou não encontrado");
+        }
         const usuario = await client.query(`SELECT * FROM usuarios WHERE nome_de_usuario = '${nome_de_usuario}'`)
         res.status(200).json({ "usuario": usuario.rows })
     } catch (err) {
@@ -184,11 +192,11 @@ export async function retrieveUsuario(req: Request, res: Response) {
 }
 
 export async function realizaLogin(req: Request, res: Response) {
-    const { nome_de_usuario, senha } = req.body
-    if (!validastring(nome_de_usuario) && !validastring(senha)) {
-        res.sendStatus(400);
-    }
     try {
+        const { nome_de_usuario, senha } = req.body
+        if (!validastring(nome_de_usuario) && !validastring(senha)) {
+            throw new Error("Dados inválidos");
+        }
         const token = await client.query(`SELECT LOGIN('${nome_de_usuario}', '${senha}')`).rows[0].login
         res.status(200).json({ "token": token })
     } catch (err) {
@@ -201,17 +209,16 @@ export async function realizaLogin(req: Request, res: Response) {
 
 
 export async function insertPostagem(req: Request, res: Response) {
-    const { title, text, token } = req.body
-    if ((!validastring(title) && !validastring(text)) || !validastring(token)) {
-        res.status(400).send("Dados inválidos");
-    }
 
     try {
+        const { title, text, token } = req.body
+        if ((!validastring(title) && !validastring(text)) || !validastring(token)) {
+            throw new Error("Dados inválidos");
+        }
         const id = uuid()
         const result = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
         if (result.rows.length === 0) {
-            res.status(400).send("Usuário não encontrado");
-            return;
+            throw new Error("Usuário não encontrado")
         }
         const id_usuario = result.rows[0].id;
         await client.query(`INSERT INTO postagens VALUES ('${id}', '${id_usuario}','${title}', '${text}', 0, DEFAULT)`)
@@ -227,13 +234,13 @@ export async function insertPostagem(req: Request, res: Response) {
 
 export async function retrievePostagem(req: Request, res: Response) {
 
-    const { id } = req.params
-    if (!validastring(id)) {
-        res.sendStatus(400);
-    }
     try {
+        const { id } = req.params
+        if (!validastring(id)) {
+            throw new Error("Id inválido ou não informado")
+        }
         const postagem = await client.query(`
-    SELECT * FROM postagens WHERE id = '${id}'`)
+            SELECT * FROM postagens WHERE id = '${id}'`)
         res.status(200).json({ "postagem": postagem.rows })
     } catch (err) {
         if (err instanceof Error) {
@@ -263,13 +270,11 @@ export async function deletePostagem(req: Request, res: Response) {
     const { id } = req.params
     const { token } = req.body
 
-    if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
-        res.sendStatus(400);
-    }
-    if (!confereTokenpostagem(id, token)) {
-        res.status(400).send("Usuário não autorizado")
-    }
     try {
+        if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token) || !confereTokenpostagem(token, id)) {
+            throw new Error("Ops, id ou token inválidos ou inexistentes");
+        }
+
         await client.query(`
         DELETE FROM postagens WHERE id = '${id}'`)
         res.sendStatus(204);
@@ -282,16 +287,14 @@ export async function deletePostagem(req: Request, res: Response) {
 }
 
 export async function curtirPostagem(req: Request, res: Response) {
-    const { id } = req.params
-    const { token } = req.body
-
-    if (!validastring(id) || !validastring(token)) {
-        res.sendStatus(400);
-    }
-    if (!confereTokenUsuario(token)) {
-        res.status(400).send("Token inválido");
-    }
     try {
+        const { id } = req.params
+        const { token } = req.body
+
+        if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
+            throw new Error("Ops, id ou token inválidos");
+        }
+
         const { likes } = await client.query(`
         SELECT CURTIR_POSTAGEM('${id}', '${token}')`)
 
@@ -306,17 +309,17 @@ export async function curtirPostagem(req: Request, res: Response) {
 }
 
 export async function insertComentario(req: Request, res: Response) {
-    const { id } = req.params
-    const { text, token } = req.body
-
-    if (!validastring(id) || !validastring(token) || !validastring(text)) {
-        res.sendStatus(400);
-    }
-
-    if (!confereTokenUsuario(token)) {
-        res.status(400).send("Token inválido");
-    }
     try {
+        const { id } = req.params
+        const { text, token } = req.body
+
+        if (!validastring(id) || !validastring(token) || !validastring(text)) {
+            throw new Error("Dados inválidos");
+        }
+        if (!confereTokenUsuario(token)) {
+            throw new Error("Token inválido");
+        }
+
         const id_comentario = uuid()
         const id_usuario = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
         await client.query(`INSERT INTO comentarios VALUES ('${id_comentario}', '${id_usuario}', '${text}','${id}', DEFAULT)`)
@@ -330,14 +333,15 @@ export async function insertComentario(req: Request, res: Response) {
 }
 
 export async function retrieveComentario(req: Request, res: Response) {
-    const { id, id_comentario } = req.params
-    if (!validastring(id) || !validastring(id_comentario)) {
-        res.sendStatus(400);
-    }
 
     try {
+        const { id, id_comentario } = req.params
+        if (!validastring(id) || !validastring(id_comentario)) {
+            throw new Error("Dados inválidos");
+        }
+
         const comentario = await client.query(`
-    SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
+            SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
         res.json({ "comentario": comentario.rows })
     } catch (err) {
         if (err instanceof Error) {
@@ -348,15 +352,15 @@ export async function retrieveComentario(req: Request, res: Response) {
 }
 
 export async function retrieveAllComentariostoPostagem(req: Request, res: Response) {
-    const { id } = req.params
-
-    if (!validastring(id)) {
-        res.sendStatus(400);
-    }
 
     try {
+        const { id } = req.params
+
+        if (!validastring(id)) {
+            throw new Error("O id da postagem é inválido");
+        }
         const comentarios = await client.query(`
-    SELECT * FROM comentarios WHERE postagem_id = '${id}'
+            SELECT * FROM comentarios WHERE postagem_id = '${id}'
         `)
         res.status(200).json({ "comentarios": comentarios.rows })
     } catch (err) {
@@ -368,15 +372,15 @@ export async function retrieveAllComentariostoPostagem(req: Request, res: Respon
 }
 
 export async function deleteComentario(req: Request, res: Response) {
-    const { id, id_comentario } = req.params
-    const { token } = req.body
-    if (!validastring(id_comentario) || !validastring(id) || !validastring(token)) {
-        res.sendStatus(400);
-    }
-    if (!confereTokenComentario(id_comentario, token)) {
-        res.status(400).send("Usuário não autorizado")
-    }
     try {
+        const { id, id_comentario } = req.params
+        const { token } = req.body
+        if (!validastring(id_comentario) || !validastring(id) || !validastring(token)) {
+            throw new Error("Dados inválidos");
+        }
+        if (!confereTokenComentario(token, id_comentario) || !confereTokenUsuario()) {
+            throw new Error("Usuário não autorizado");
+        }
         await client.query(`
         DELETE FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
         res.sendStatus(204);
