@@ -312,8 +312,8 @@ export async function curtirPostagem(req: Request, res: Response) {
 
         const retorno = await client.query(`
         SELECT CURTIR_POSTAGEM('${id}', '${token}')`)
-        console.log(retorno)
-        const { likes } = retorno.rows[0].qtd_likes
+        console.log(retorno.curtir_postagem)
+        const likes = retorno.curtir_postagem
         res.status(200).json({ "likes": likes });
 
     } catch (err) {
