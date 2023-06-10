@@ -205,7 +205,8 @@ export async function realizaLogin(req: Request, res: Response) {
             throw new Error("Dados inválidos");
         }
         const retorno = await client.query(`SELECT * FROM LOGIN('${nome_de_usuario}', '${senha}')`)
-        const { token, id } = retorno.rows[0]
+        const token = retorno.rows[0].token
+        const id = retorno.rows[0].id
 
         if (!token || !id) {
             throw new Error("Ops, token ou id não encontrado")
