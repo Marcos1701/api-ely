@@ -204,20 +204,14 @@ export async function realizaLogin(req: Request, res: Response) {
         if (!validastring(nome_de_usuario) && !validastring(senha)) {
             throw new Error("Dados inválidos");
         }
-        const retorno = await client.query(`SELECT * FROM LOGIN('${nome_de_usuario}', '${senha}')`)
-        const token = retorno.token
-        const id = retorno.id
-        console.log(retorno.rows[0])
-        console.log(retorno.rows[1].token)
-        console.log(token, id)
+        const { token_usuario, id_usuario } = await client.query(`SELECT * FROM LOGIN('${nome_de_usuario}', '${senha}')`)
 
-        console.log(token, id)
-        if (!token || !id) {
+        if (!token_usuario || !id_usuario) {
             throw new Error("Ops, token ou id não encontrado")
         }
         res.status(200).json({
-            "id": id,
-            "token": token
+            "id": id_usuario,
+            "token": token_usuario
         })
     } catch (err) {
         if (err instanceof Error) {
