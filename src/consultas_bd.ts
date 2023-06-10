@@ -70,16 +70,22 @@ const validastring = (id: string) => {
     `);
 
         await client.query(`
-        CREATE OR REPLACE FUNCTION LOGIN(nome_de_usuario varchar, senha varchar)
+        CREATE OR REPLACE FUNCTION LOGIN(nome varchar, senha varchar)
         RETURNS VARCHAR AS $$
         DECLARE
         token_usuario varchar;
+        id_usuario varchar;
+        retorno RECORD;
         BEGIN
-            SELECT token INTO token_usuario FROM usuarios WHERE usuarios.nome_de_usuario = nome_de_usuario AND usuarios.senha = senha;
-            IF token_usuario IS NULL THEN
+            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome AND senha = senha;
+            SELECT token INTO token_usuario FROM usuarios WHERE id = id_usuario;
+            IF id_usuario IS NULL OR token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Usuário ou senha incorretos';
             END IF;
-            RETURN token_usuario;
+            
+            retorno.token_usuario := token_usuario;
+            retorno.id_usuario := id_usuario;
+            RETURN retorno;
         END;
         $$ LANGUAGE plpgsql;
     `);
@@ -158,9 +164,12 @@ export async function insertUsuario(req: Request, res: Response) {
         if (!validastring(nome_de_usuario) || !validastring(senha)) {
             throw new Error("Ops, nome de usuário ou senha inválidos");
         };
-        await client.query(`SELECT INSERIR_USUARIO('${uuid()}','${nome_de_usuario}', '${senha}', '${token}')`)
+        const id = uuid();
+        await client.query(`SELECT INSERIR_USUARIO('${id}','${nome_de_usuario}', '${senha}', '${token}')`)
             .then(() => {
-                res.status(201).json({ "token": token });
+                res.status(201).json({
+                    "id": id, "token": token
+                });
             })
             .catch((err) => {
                 if (err instanceof Error) {
@@ -198,8 +207,10 @@ export async function realizaLogin(req: Request, res: Response) {
         if (!validastring(nome_de_usuario) && !validastring(senha)) {
             throw new Error("Dados inválidos");
         }
-        const token = await client.query(`SELECT LOGIN('${nome_de_usuario}', '${senha}')`).rows[0].login
-        res.status(200).json({ "token": token })
+        const { id, token } = await client.query(`SELECT LOGIN('${nome_de_usuario}', '${senha}')`)
+        res.status(200).json({
+            "id": id, "token": token
+        })
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao buscar usuario: ${err.message}`)
@@ -315,7 +326,6 @@ export async function insertComentario(req: Request, res: Response) {
         const { text, token } = req.body
 
         if (!validastring(id) || !validastring(token) || !validastring(text)) {
-            console.log(id, token, text)
             throw new Error("Dados inválidos");
         }
         if (!confereTokenUsuario(token)) {
