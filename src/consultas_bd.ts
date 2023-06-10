@@ -51,6 +51,7 @@ const validastring = (id: string) => {
         DECLARE
             idUsuario varchar;
             qtd_likes INT;
+            
         BEGIN
             SELECT id_usuario INTO idUsuario FROM postagens WHERE id = id_postagem;
             IF idUsuario IS NULL THEN
@@ -292,7 +293,7 @@ export async function curtirPostagem(req: Request, res: Response) {
     }
     try {
         const { likes } = await client.query(`
-        SELECT CURTIR_POSTAGEM('${token}', '${id}')`)
+        SELECT CURTIR_POSTAGEM('${id}', '${token}')`)
 
         res.status(200).json({ "likes": likes });
 
@@ -318,7 +319,7 @@ export async function insertComentario(req: Request, res: Response) {
     try {
         const id_comentario = uuid()
         const id_usuario = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
-        await client.query(`INSERT INTO comentarios VALUES ('${id_comentario}', '${id_usuario}','${id}', '${text}', DEFAULT)`)
+        await client.query(`INSERT INTO comentarios VALUES ('${id_comentario}', '${id_usuario}', '${text}','${id}', DEFAULT)`)
         res.status(201).json({ "id": id_comentario });
     } catch (err) {
         if (err instanceof Error) {
