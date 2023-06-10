@@ -6,6 +6,7 @@ import * as crypto from 'crypto'
 
 const validastring = (id: string) => {
     if (id === '' || id === undefined || id === null) {
+        console.log(`O valor ${id} é inválido!`)
         return false
     }
     return true
@@ -314,6 +315,7 @@ export async function insertComentario(req: Request, res: Response) {
         const { text, token } = req.body
 
         if (!validastring(id) || !validastring(token) || !validastring(text)) {
+            console.log(id, token, text)
             throw new Error("Dados inválidos");
         }
         if (!confereTokenUsuario(token)) {
