@@ -205,13 +205,14 @@ export async function insertPostagem(req: Request, res: Response) {
         res.status(400).send("Dados inválidos");
     }
 
-    if (!confereTokenUsuario(token)) {
-        res.status(400).send("Token inválido");
-    }
-
     try {
         const id = uuid()
-        const id_usuario = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
+        const result = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
+        if (result.rows.length === 0) {
+            res.status(400).send("Usuário não encontrado");
+            return;
+        }
+        const id_usuario = result.rows[0].id;
         await client.query(`INSERT INTO postagens VALUES ('${id}', '${id_usuario}','${title}', '${text}', 0, DEFAULT)`)
         res.status(201).json({ "id": id });
     } catch (err) {
@@ -220,8 +221,8 @@ export async function insertPostagem(req: Request, res: Response) {
             res.sendStatus(400);
         }
     }
-
 }
+
 
 export async function retrievePostagem(req: Request, res: Response) {
 
