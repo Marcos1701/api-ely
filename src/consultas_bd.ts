@@ -211,7 +211,8 @@ export async function insertPostagem(req: Request, res: Response) {
 
     try {
         const id = uuid()
-        await client.query(`INSERT INTO postagens (id, title, text, id_usuario) VALUES ('${id}', '${title}', '${text}', '${token}')`)
+        const id_usuario = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
+        await client.query(`INSERT INTO postagens VALUES ('${id}', '${id_usuario}','${title}', '${text}', 0, DEFAULT)`)
         res.status(201).json({ "id": id });
     } catch (err) {
         if (err instanceof Error) {
@@ -315,7 +316,8 @@ export async function insertComentario(req: Request, res: Response) {
     }
     try {
         const id_comentario = uuid()
-        await client.query(`INSERT INTO comentarios (id, text, id_usuario, postagem_id) VALUES ('${id_comentario}', '${text}', '${token}', '${id}')`)
+        const id_usuario = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
+        await client.query(`INSERT INTO comentarios VALUES ('${id_comentario}', '${id_usuario}','${id}', '${text}', DEFAULT)`)
         res.status(201).json({ "id": id_comentario });
     } catch (err) {
         if (err instanceof Error) {
