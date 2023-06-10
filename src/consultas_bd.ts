@@ -207,7 +207,8 @@ export async function realizaLogin(req: Request, res: Response) {
         const retorno = await client.query(`SELECT * FROM LOGIN('${nome_de_usuario}', '${senha}')`)
         const token = retorno.token
         const id = retorno.id
-        console.log(retorno)
+        console.log(retorno.rows[0])
+        console.log(retorno.rows[1].token)
         console.log(token, id)
 
         console.log(token, id)
