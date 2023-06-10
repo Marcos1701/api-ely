@@ -375,10 +375,10 @@ export async function deleteComentario(req: Request, res: Response) {
     try {
         const { id, id_comentario } = req.params
         const { token } = req.body
-        if (!validastring(id_comentario) || !validastring(id) || !validastring(token)) {
+        if (!validastring(id_comentario) || !validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
             throw new Error("Dados inválidos");
         }
-        if (!confereTokenComentario(token, id_comentario) || !confereTokenUsuario()) {
+        if (!confereTokenComentario(token, id_comentario)) {
             throw new Error("Usuário não autorizado");
         }
         await client.query(`
