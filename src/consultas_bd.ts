@@ -208,6 +208,7 @@ export async function realizaLogin(req: Request, res: Response) {
         const token = retorno.rows[0].token
         const id = retorno.rows[0].id
 
+        console.log(token, id)
         if (!token || !id) {
             throw new Error("Ops, token ou id não encontrado")
         }
