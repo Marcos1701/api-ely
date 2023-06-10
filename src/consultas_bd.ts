@@ -224,8 +224,8 @@ export async function insertPostagem(req: Request, res: Response) {
 
 export async function retrievePostagem(req: Request, res: Response) {
 
-    const { id, token } = req.params
-    if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
+    const { id } = req.params
+    if (!validastring(id)) {
         res.sendStatus(400);
     }
     try {
@@ -242,10 +242,7 @@ export async function retrievePostagem(req: Request, res: Response) {
 
 export async function retrieveAllPostagens(req: Request, res: Response) {
     try {
-        const { token } = req.body
-        if (!validastring(token) || !confereTokenUsuario(token)) {
-            res.sendStatus(400);
-        }
+
         const postagens = await client.query(`
             SELECT * FROM postagens
             `)
@@ -330,14 +327,10 @@ export async function insertComentario(req: Request, res: Response) {
 
 export async function retrieveComentario(req: Request, res: Response) {
     const { id, id_comentario } = req.params
-    const { token } = req.body
-    if (!validastring(id) || !validastring(id_comentario) || !validastring(token) || !confereTokenUsuario(token)) {
+    if (!validastring(id) || !validastring(id_comentario)) {
         res.sendStatus(400);
     }
 
-    if (!confereTokenUsuario(token)) {
-        res.status(400).send("Token inválido");
-    }
     try {
         const comentario = await client.query(`
     SELECT * FROM comentarios WHERE id = '${id_comentario}' and postagem_id = '${id}'`)
@@ -352,8 +345,8 @@ export async function retrieveComentario(req: Request, res: Response) {
 
 export async function retrieveAllComentariostoPostagem(req: Request, res: Response) {
     const { id } = req.params
-    const { token } = req.body
-    if (!validastring(id) || !validastring(token) || !confereTokenUsuario(token)) {
+
+    if (!validastring(id)) {
         res.sendStatus(400);
     }
 
