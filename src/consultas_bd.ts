@@ -310,9 +310,9 @@ export async function curtirPostagem(req: Request, res: Response) {
             throw new Error("Ops, id ou token inválidos");
         }
 
-        const { likes } = await client.query(`
+        const retorno = await client.query(`
         SELECT CURTIR_POSTAGEM('${id}', '${token}')`)
-
+        const { likes } = retorno.rows[0]
         res.status(200).json({ "likes": likes });
 
     } catch (err) {
