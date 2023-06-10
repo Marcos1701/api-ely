@@ -77,7 +77,7 @@ const validastring = (id: string) => {
         id_usuario varchar;
         retorno RECORD;
         BEGIN
-            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome AND senha = senha;
+            SELECT id INTO id_usuario FROM usuarios WHERE nome_de_usuario = nome AND usuarios.senha = senha;
             SELECT token INTO token_usuario FROM usuarios WHERE id = id_usuario;
             IF id_usuario IS NULL OR token_usuario IS NULL THEN
                 RAISE EXCEPTION 'Usuário ou senha incorretos';
