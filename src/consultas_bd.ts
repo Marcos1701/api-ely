@@ -206,6 +206,9 @@ export async function realizaLogin(req: Request, res: Response) {
         }
         const { token, id } = await client.query(`SELECT * FROM LOGIN('${nome_de_usuario}', '${senha}')`)
 
+        if (!token || !id) {
+            throw new Error("Ops, token ou id não encontrado")
+        }
         res.status(200).json({
             "id": id,
             "token": token
