@@ -337,10 +337,9 @@ export async function insertComentario(req: Request, res: Response) {
         }
 
         const id_comentario = uuid()
-        let id_usuario = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
-        console.log(id_usuario)
-        id_usuario = id_usuario.rows[0].id
-        console.log(id_usuario)
+        const retorno = await client.query(`SELECT id FROM usuarios WHERE token = '${token}'`)
+        const id_usuario = retorno.rows[0].id
+
         await client.query(`INSERT INTO comentarios VALUES ('${id_comentario}', '${id_usuario}', '${text}','${id}', DEFAULT)`)
         res.status(201).json({ "id": id_comentario });
     } catch (err) {
