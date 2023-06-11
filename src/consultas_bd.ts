@@ -290,7 +290,7 @@ export async function deletePostagem(req: Request, res: Response) {
             throw new Error("Ops, id ou token inválidos ou inexistentes");
         }
 
-        await client.query(`DELETE FROM COMENTARIOS WHERE id_postagem = '${id}';
+        await client.query(`DELETE FROM COMENTARIOS WHERE postagem_id = '${id}';
                             DELETE FROM postagens WHERE id = '${id}';`);
         res.sendStatus(204);
     } catch (err) {
