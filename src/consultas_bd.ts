@@ -186,6 +186,7 @@ export async function retrieveUsuario(req: Request, res: Response) {
     try {
         const { id } = req.params
         const retorno = await client.query(`SELECT nome_de_usuario FROM usuarios WHERE id = '${id}'`)
+        console.log(retorno)
         const { nome_de_usuario } = retorno.rows[0]
         res.status(200).json({
             "nome_de_usuario": nome_de_usuario
