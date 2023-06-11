@@ -184,12 +184,12 @@ export async function insertUsuario(req: Request, res: Response) {
 
 export async function retrieveUsuario(req: Request, res: Response) {
     try {
-        const { nome_de_usuario } = req.params
-        if (!validastring(nome_de_usuario)) {
-            throw new Error("Ops, nome de usuário inválido ou não encontrado");
-        }
-        const usuario = await client.query(`SELECT * FROM usuarios WHERE nome_de_usuario = '${nome_de_usuario}'`)
-        res.status(200).json({ "usuario": usuario.rows })
+        const { id } = req.params
+        const retorno = await client.query(`SELECT nome_de_usuario FROM usuarios WHERE id = '${id}'`)
+        const { nome_de_usuario } = retorno.rows[0]
+        res.status(200).json({
+            "nome_de_usuario": nome_de_usuario
+        })
     } catch (err) {
         if (err instanceof Error) {
             console.log(`Erro ao buscar usuario: ${err.message}`)
