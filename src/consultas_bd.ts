@@ -186,7 +186,6 @@ export async function retrieveUsuario(req: Request, res: Response) {
     try {
         const { id } = req.params
         const retorno = await client.query(`SELECT nome_de_usuario FROM usuarios WHERE id = '${id}'`)
-        console.log(retorno)
         const { nome_de_usuario } = retorno.rows[0]
         res.status(200).json({
             "nome_de_usuario": nome_de_usuario
@@ -291,8 +290,8 @@ export async function deletePostagem(req: Request, res: Response) {
             throw new Error("Ops, id ou token inválidos ou inexistentes");
         }
 
-        await client.query(`
-        DELETE FROM postagens WHERE id = '${id}'`)
+        await client.query(`DELETE FROM COMENTARIOS WHERE id_postagem = '${id}';
+                            DELETE FROM postagens WHERE id = '${id}';`);
         res.sendStatus(204);
     } catch (err) {
         if (err instanceof Error) {
